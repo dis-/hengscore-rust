@@ -1,0 +1,84 @@
+name: Rust CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  checks:
+    name: Rust / ${{ matrix.check }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        check: [fmt, clippy, test]
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install pinned Rust toolchain
+        run: |
+          toolchain="$(python3 -c 'import re,tomllib; v=tomllib.load(open("rust-toolchain.toml","rb"))["toolchain"]["channel"]; assert re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+",v); print(v)')"
+          rustup toolchain install "$toolchain" --profile minimal --component rustfmt --component clippy
+
+      - name: Install system SQLite build dependencies
+        if: matrix.check != 'fmt'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends pkg-config libsqlite3-dev
+
+      - name: Check formatting
+        if: matrix.check == 'fmt'
+        run: cargo fmt --check
+
+      - name: Run Clippy
+        if: matrix.check == 'clippy'
+        run: cargo clippy --locked --all-targets -- -D warnings
+
+      - name: Run tests with synthetic fixtures only
+        if: matrix.check == 'test'
+        run: cargo test --locked
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout lockfile
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install pinned Rust toolchain
+        id: toolchain
+        run: |
+          toolchain="$(python3 -c 'import re,tomllib; v=tomllib.load(open("rust-toolchain.toml","rb"))["toolchain"]["channel"]; assert re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+",v); print(v)')"
+          rustup toolchain install "$toolchain" --profile minimal
+          printf 'version=%s\n' "$toolchain" >> "$GITHUB_OUTPUT"
+
+      # Run outside the checkout so repository Cargo configuration cannot affect
+      # installation of the auditor. Audit the explicit lockfile from there too.
+      - name: Install pinned cargo-audit
+        working-directory: ${{ runner.temp }}
+        env:
+          CI_RUST_TOOLCHAIN: ${{ steps.toolchain.outputs.version }}
+        run: rustup run "$CI_RUST_TOOLCHAIN" cargo install cargo-audit --version 0.22.2 --locked --root "$RUNNER_TEMP/cargo-audit"
+
+      - name: Audit current advisories and deny warnings
+        working-directory: ${{ runner.temp }}
+        run: '"$RUNNER_TEMP/cargo-audit/bin/cargo-audit" audit --file "$GITHUB_WORKSPACE/Cargo.lock" --deny warnings'

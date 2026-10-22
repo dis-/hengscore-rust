@@ -19,6 +19,11 @@ cargo build --release --locked --bin hengscore-server
 Gitに含まれるRustテストと、移行環境で実施したDB・HTTP・常駐化・復元の外部検証は別の範囲。
 実行バイナリにはシステムSQLiteへの動的リンクがあるため、配備先でもSQLiteランタイムが必要。
 
+GitHub Actionsはpush・pull request・手動実行で、fmt・Clippy・Rustテスト・cargo auditを独立して実行する。
+DBやダンプ、VPSへの接続、追加のGitHub Secretsは不要。非公開ソースのcheckoutにはGitHubが発行する読み取り専用のトークンを使い、認証情報をcheckout後に保持しない。
+checkout actionはコミットSHA、cargo-auditはバージョンを固定する。依存監査は最新の公開アドバイザリを取得し、警告も失敗として扱う。
+このCIはコード検証のみを行い、デプロイや公開URLの変更は行わない。
+
 ## 実行
 
 ```sh
