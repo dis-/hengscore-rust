@@ -1,0 +1,26 @@
+# This directory also holds private operational artifacts and data copies.
+# Track source/build inputs by allowlist; never use `git add -f` on runtime data.
+/*
+!/.gitignore
+!/.gitattributes
+!/README.md
+!/Cargo.toml
+!/Cargo.lock
+!/rust-toolchain.toml
+!/src/
+!/src/**/
+!/src/**/*.rs
+!/src/jis0208.bin
+!/src/jis0212.bin
+!/english_names_source.json
+!/build_php_reference.py
+!/php-reference/
+/php-reference/*
+!/php-reference/NOTICE
+!/php-reference/LICENSE
+!/php-reference/compat_vectors.bin
+!/php-reference/decoder_oracle.c
+!/php-reference/extraction_report.json
+!/php-reference/mbfilter_cjk.c
+!/php-reference/unicode_table_jis.h
+!/php-reference/unicode_table_jis-7.4.h

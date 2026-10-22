@@ -1,0 +1,17 @@
+{
+  "jisx0208_ucs_table": {
+    "entries": 7808,
+    "php_7_4_identical": true,
+    "sha256": "9c089e5d2c46ea5a97882499894e5b598a91dd7b4834a76f22e9ba855418dccc"
+  },
+  "jisx0212_ucs_table": {
+    "entries": 7211,
+    "php_7_4_identical": true,
+    "sha256": "c0944ed9277ff0430ca96b83d440b7d3e321df9f89865f9586cda72bb5268f43"
+  },
+  "source_files": {
+    "unicode_table_jis.h": "807208c2e4f4c8a4248fb230be3759456841f485c5675246cf8eeb422caecc7d",
+    "mbfilter_cjk.c": "b0db893b7a9dc1db05def1aa59404b94edb35a9463a258b300ab4fa948cbc645",
+    "unicode_table_jis-7.4.h": "be76d0228d749db956bc0f6262f090a21df1e9652cbaf00cd17ffa4819504a11"
+  }
+}

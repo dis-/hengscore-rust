@@ -1,0 +1,3 @@
+# Preserve pinned reference bytes and checksums across Linux/Windows checkouts.
+* -text whitespace=cr-at-eol
+*.bin binary
