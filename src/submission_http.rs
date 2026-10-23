@@ -165,7 +165,7 @@ async fn post(State(app): State<App>, request: Request<Body>) -> Response {
     };
     enum Outcome {
         Registered(i64),
-        Invalid,
+        Invalid(&'static str),
         Reference,
         Conflict,
         Unavailable,
@@ -174,8 +174,8 @@ async fn post(State(app): State<App>, request: Request<Body>) -> Response {
     let task = tokio::task::spawn_blocking(move || {
         // Permit remains held even if the HTTP future is cancelled or times out.
         let _permit = permit;
-        if parse_submission(&header, &raw).is_err() {
-            return Outcome::Invalid;
+        if let Err(reason) = parse_submission(&header, &raw) {
+            return Outcome::Invalid(reason);
         }
         let opened = match app.store_id.as_deref() {
             Some(id) => Store::open_managed_nonblocking(&app.root, id),
@@ -206,8 +206,16 @@ async fn post(State(app): State<App>, request: Request<Body>) -> Response {
                 }
             ),
         ),
-        Ok(Ok(Outcome::Invalid)) => error(StatusCode::UNPROCESSABLE_ENTITY, "invalid_submission"),
-        Ok(Ok(Outcome::Reference)) => error(StatusCode::UNPROCESSABLE_ENTITY, "unknown_reference"),
+        // A rejected well-framed body is otherwise invisible in the logs. The
+        // reasons are fixed literals from the parser, never submitted text.
+        Ok(Ok(Outcome::Invalid(reason))) => {
+            eprintln!("submission_rejected code=invalid_submission reason=\"{reason}\"");
+            error(StatusCode::UNPROCESSABLE_ENTITY, "invalid_submission")
+        }
+        Ok(Ok(Outcome::Reference)) => {
+            eprintln!("submission_rejected code=unknown_reference");
+            error(StatusCode::UNPROCESSABLE_ENTITY, "unknown_reference")
+        }
         Ok(Ok(Outcome::Conflict)) => error(StatusCode::CONFLICT, "idempotency_conflict"),
         _ => error(StatusCode::SERVICE_UNAVAILABLE, "temporarily_unavailable"),
     }
