@@ -36,7 +36,7 @@ fn summarize(conn: &Connection) -> rusqlite::Result<Summary> {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut args = env::args_os().skip(1);
-    let path = args.next().ok_or("使い方: hengscore_poc DBファイル")?;
+    let path = args.next().ok_or("使い方: hengscore DBファイル")?;
     if args.next().is_some() {
         return Err("DBファイルを1つだけ指定してください".into());
     }

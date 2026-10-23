@@ -1,5 +1,5 @@
 #![forbid(unsafe_code)]
-use hengscore_poc::{web, web_http};
+use hengscore::{web, web_http};
 use std::{
     env,
     error::Error,

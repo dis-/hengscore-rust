@@ -1,5 +1,5 @@
 #![forbid(unsafe_code)]
-use hengscore_poc::{
+use hengscore::{
     registration::{Fault, Store},
     submission_http,
 };
