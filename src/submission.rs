@@ -1,4 +1,4 @@
-use crate::legacy_encoding::{Charset, decode};
+use crate::legacy_encoding::{Charset, decode, decode_lossy};
 use std::collections::BTreeMap;
 
 pub const MAX_RAW: usize = 8 * 1024 * 1024;
@@ -19,7 +19,8 @@ pub struct Submission {
     pub ascii: bool,
     pub info: BTreeMap<String, String>,
     pub dump_lines: Vec<String>,
-    // Untrusted HTML. Parsing it does NOT authorize rendering or publishing it.
+    // Untrusted HTML, with `?` in place of malformed bytes. Parsing it does NOT
+    // authorize rendering or publishing it.
     pub screen_lines: Option<Vec<String>>,
 }
 
@@ -55,39 +56,70 @@ fn encoding(content_type: &str) -> Result<Charset, &'static str> {
     }
 }
 
+/// Decodes one section line by line, strictly or with `?` substitution, while
+/// enforcing the line length limit and the shared decoded size budget.
+fn decode_section(
+    charset: Charset,
+    lines: &[&[u8]],
+    lossy: bool,
+    budget: &mut usize,
+) -> Result<Vec<String>, &'static str> {
+    lines
+        .iter()
+        .map(|line| {
+            let text = if lossy {
+                decode_lossy(charset, line)
+            } else {
+                decode(charset, line)?
+            };
+            if text.len() > MAX_LINE {
+                return Err("line length limit exceeded");
+            }
+            *budget = budget
+                .checked_sub(text.len())
+                .ok_or("decoded body limit exceeded")?;
+            Ok(text)
+        })
+        .collect()
+}
+
 pub fn parse_submission(content_type: &str, raw: &[u8]) -> Result<Submission, &'static str> {
     if raw.len() > MAX_RAW {
         return Err("raw body limit exceeded");
     }
     let charset = encoding(content_type)?;
-    let decoded = decode(charset, raw)?;
-    if decoded.len() > MAX_DECODED {
-        return Err("decoded body limit exceeded");
-    }
-    if decoded.contains('\0') {
+    // NUL is a single ASCII byte in every supported charset, so checking the
+    // raw body equals checking the decoded text.
+    if raw.contains(&0) {
         return Err("NUL byte is not allowed");
     }
+    // Split and locate the markers before decoding: LF never continues a
+    // multibyte sequence in any supported charset and the markers are ASCII,
+    // so the sections are found even when the screen shot holds broken bytes.
     // Bound the line index allocation, including input containing only newlines.
-    let lines: Vec<_> = decoded.split('\n').take(MAX_LINES + 1).collect();
+    let lines: Vec<&[u8]> = raw
+        .split(|&byte| byte == b'\n')
+        .take(MAX_LINES + 1)
+        .collect();
     if lines.len() > MAX_LINES {
         return Err("line count limit exceeded");
     }
-    if lines.iter().any(|line| line.len() > MAX_LINE) {
-        return Err("line length limit exceeded");
-    }
     let dump_at = lines
         .iter()
-        .position(|line| *line == DUMP_MARKER)
+        .position(|line| *line == DUMP_MARKER.as_bytes())
         .ok_or("missing dump marker")?;
-    let screen_at = lines.iter().position(|line| *line == SCREEN_MARKER);
+    let screen_at = lines
+        .iter()
+        .position(|line| *line == SCREEN_MARKER.as_bytes());
     if screen_at.is_some_and(|index| index < dump_at) {
         return Err("screen marker precedes dump marker");
     }
     if dump_at > MAX_INFO_LINES {
         return Err("metadata line limit exceeded");
     }
+    let mut budget = MAX_DECODED;
     let mut info = BTreeMap::new();
-    for line in &lines[..dump_at] {
+    for line in decode_section(charset, &lines[..dump_at], false, &mut budget)? {
         // Legacy PHP ignores header lines with no colon.
         let Some((key, value)) = line.split_once(':') else {
             continue;
@@ -132,19 +164,17 @@ pub fn parse_submission(content_type: &str, raw: &[u8]) -> Result<Submission, &'
         }
     }
     let dump_end = screen_at.unwrap_or(lines.len());
-    let dump_lines: Vec<String> = lines[dump_at + 1..dump_end]
-        .iter()
-        .map(|line| (*line).to_owned())
-        .collect();
+    let dump_lines = decode_section(charset, &lines[dump_at + 1..dump_end], false, &mut budget)?;
     if dump_lines.iter().all(String::is_empty) {
         return Err("empty character dump");
     }
-    let screen_lines = screen_at.map(|index| {
-        lines[index + 1..]
-            .iter()
-            .map(|line| (*line).to_owned())
-            .collect()
-    });
+    // The game writes the screen cell by cell, so a double-width character can
+    // lose its second byte (seen on a samurai's seppuku screen). Legacy PHP
+    // accepted such screens with `?` in place of the broken bytes; do the same
+    // rather than rejecting the whole submission.
+    let screen_lines = screen_at
+        .map(|index| decode_section(charset, &lines[index + 1..], true, &mut budget))
+        .transpose()?;
     Ok(Submission {
         ascii: matches!(charset, Charset::Ascii),
         info,
@@ -179,27 +209,94 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn legacy_encodings() -> Result<(), &'static str> {
-        let source = fixture()
+    /// The fixture with ASCII-only values, valid in every supported charset.
+    fn ascii_fixture() -> String {
+        fixture()
             .replace("勇者", "TOKEN")
             .replace("変愚蛮怒", "Hengband")
             .replace("人間", "Human")
             .replace("戦士", "Warrior")
             .replace("ふつう", "Ordinary")
             .replace("魔法なし", "None")
-            .replace("キャラクターダンプ", "DUMP");
+            .replace("キャラクターダンプ", "DUMP")
+    }
+
+    /// `source` with its first `placeholder` replaced by `bytes`.
+    fn splice(source: &[u8], placeholder: &[u8], bytes: &[u8]) -> Vec<u8> {
+        let at = source
+            .windows(placeholder.len())
+            .position(|window| window == placeholder)
+            .expect("placeholder present");
+        [&source[..at], bytes, &source[at + placeholder.len()..]].concat()
+    }
+
+    #[test]
+    fn legacy_encodings() -> Result<(), &'static str> {
         for (charset, encoded) in [
             ("EUC-JP", &[0xa1, 0xc1][..]),
             ("SHIFT_JIS", &[0x81, 0x60][..]),
         ] {
-            let (before, after) = source.split_once("TOKEN").ok_or("fixture missing name")?;
-            let bytes = [before.as_bytes(), encoded, after.as_bytes()].concat();
+            let bytes = splice(ascii_fixture().as_bytes(), b"TOKEN", encoded);
             let parsed = parse_submission(&format!("text/plain; charset={charset}"), &bytes)?;
             assert_eq!(parsed.info["name"], "〜");
             assert_eq!(parsed.dump_lines[0], "DUMP");
         }
         Ok(())
+    }
+
+    #[test]
+    fn screen_shot_accepts_malformed_bytes_as_substitutes() -> Result<(), &'static str> {
+        let source = ascii_fixture()
+            + "-----screen shot-----\n<pre>WAVE<font color=\"#ffffff\">STRAY</font>STRAY\n</pre>\n";
+        for (charset, wave, decoded_wave, stray) in [
+            ("SHIFT_JIS", &[0x81, 0x60][..], "〜", &[0x82][..]),
+            ("EUC-JP", &[0xa1, 0xc1][..], "〜", &[0xa4][..]),
+            ("UTF-8", "〜".as_bytes(), "〜", &[0xe3][..]),
+            ("ASCII", &b"~"[..], "~", &[0x82][..]),
+        ] {
+            // A lead byte without its second byte, once before markup and once
+            // at the end of the line.
+            let bytes = splice(source.as_bytes(), b"WAVE", wave);
+            let bytes = splice(&bytes, b"STRAY", stray);
+            let bytes = splice(&bytes, b"STRAY", stray);
+            let parsed = parse_submission(&format!("text/plain; charset={charset}"), &bytes)?;
+            assert_eq!(parsed.info["name"], "TOKEN");
+            assert_eq!(parsed.dump_lines, vec!["DUMP"]);
+            assert_eq!(
+                parsed.screen_lines,
+                Some(vec![
+                    format!("<pre>{decoded_wave}<font color=\"#ffffff\">?</font>?"),
+                    "</pre>".into(),
+                    String::new(),
+                ]),
+                "{charset}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn malformed_bytes_outside_the_screen_shot_are_rejected() {
+        let source = ascii_fixture() + "-----screen shot-----\n<pre>SCREEN</pre>\n";
+        for (charset, stray) in [
+            ("SHIFT_JIS", &[0x82][..]),
+            ("EUC-JP", &[0xa4][..]),
+            ("UTF-8", &[0xe3][..]),
+            ("ASCII", &[0x82][..]),
+        ] {
+            let header = format!("text/plain; charset={charset}");
+            for placeholder in [&b"TOKEN"[..], &b"DUMP"[..]] {
+                let bytes = splice(source.as_bytes(), placeholder, stray);
+                assert_eq!(
+                    parse_submission(&header, &bytes).err(),
+                    Some("malformed encoded text"),
+                    "{charset} {placeholder:?}"
+                );
+            }
+            // The screen shot is the only lenient section.
+            let bytes = splice(source.as_bytes(), b"SCREEN", stray);
+            assert!(parse_submission(&header, &bytes).is_ok(), "{charset}");
+        }
     }
 
     #[test]

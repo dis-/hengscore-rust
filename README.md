@@ -51,6 +51,7 @@ STORE_ID
 ## 文字コード互換と出典
 
 `src/legacy_encoding.rs` とJIS表は旧SJIS／EUC-JP変換との互換処理を行う。
+ヘッダとキャラクターダンプは不正なバイト列を拒否する。スクリーンショットは本体が画面を1バイトずつ書き出すため全角文字の半分だけが残ることがあり、旧PHP版と同じく不正なバイト列を `?` に置き換えて受け付ける。
 `php-reference/` にはテスト用期待値、その生成に用いた固定参照ソース、出典・ライセンスを保存する。
 Rustテストは `php-reference/compat_vectors.bin` をコンパイル時に読み込むため、このファイルも必須。
 第三者由来の表・参照コードについては `php-reference/NOTICE` と `php-reference/LICENSE` を参照。
