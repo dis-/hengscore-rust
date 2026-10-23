@@ -1,5 +1,5 @@
 #![forbid(unsafe_code)]
-use hengscore_poc::ranking::{SortMode, page_offset, ranking};
+use hengscore::ranking::{SortMode, page_offset, ranking};
 use rusqlite::{Connection, OpenFlags};
 use std::{env, error::Error, io, path::Path};
 fn invalid(message: &'static str) -> io::Error {

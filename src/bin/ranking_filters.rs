@@ -1,4 +1,4 @@
-use hengscore_poc::search::{Filters, SortMode, page_offset, search};
+use hengscore::search::{Filters, SortMode, page_offset, search};
 use rusqlite::{Connection, OpenFlags};
 use std::{env, error::Error, io, path::Path};
 fn invalid(message: &'static str) -> io::Error {
