@@ -3,6 +3,11 @@
 既存のスコア送信形式を受け付け、SQLiteへの登録とWeb表示を行うRust実装。
 Gitはソースとビルド入力の管理に使用し、DB・ダンプ・画面・資格情報・配備先固有の設定を保存しない。
 
+## ブランチ運用
+
+既定ブランチは `develop`。変更はすべて `develop` 宛てのpull requestで受け、区切りで `develop` を `main` に進める。
+`main` へ直接pushしない。配備先のバイナリはコミットを固定して別途配備する。
+
 ## ビルドと検証
 
 Linux、Rust（`rust-toolchain.toml` に固定）、システムのSQLite開発ライブラリとpkg-configが必要。
