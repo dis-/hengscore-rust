@@ -2,6 +2,9 @@
 name = "hengscore_poc"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
+description = "Hengband score submission and web server"
+repository = "https://github.com/dis-/hengscore-rust"
 
 [dependencies]
 ammonia = "=4.2.4"

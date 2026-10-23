@@ -1,7 +1,7 @@
 # Hengband score server — Rust migration
 
 既存のスコア送信形式を受け付け、SQLiteへの登録とWeb表示を行うRust実装。
-現時点では未公開の作業用コピーで検証している。Gitはソースとビルド入力の管理に使用し、DB・ダンプ・画面・資格情報・配備先固有の設定を保存しない。
+Gitはソースとビルド入力の管理に使用し、DB・ダンプ・画面・資格情報・配備先固有の設定を保存しない。
 
 ## ビルドと検証
 
@@ -16,11 +16,11 @@ cargo build --release --locked --bin hengscore-server
 ```
 
 通常のビルド・RustテストにPHP実行環境や実データは不要。
-Gitに含まれるRustテストと、移行環境で実施したDB・HTTP・常駐化・復元の外部検証は別の範囲。
+Gitに含まれるRustテストと、配備環境で実施したDB・HTTP・常駐化・復元の外部検証は別の範囲。
 実行バイナリにはシステムSQLiteへの動的リンクがあるため、配備先でもSQLiteランタイムが必要。
 
 GitHub Actionsはpush・pull request・手動実行で、fmt・Clippy・Rustテスト・cargo auditを独立して実行する。
-DBやダンプ、VPSへの接続、追加のGitHub Secretsは不要。非公開ソースのcheckoutにはGitHubが発行する読み取り専用のトークンを使い、認証情報をcheckout後に保持しない。
+DBやダンプ、VPSへの接続、追加のGitHub Secretsは不要。checkoutにはGitHubが発行する読み取り専用のトークンを使い、認証情報をcheckout後に保持しない。
 checkout actionはコミットSHA、cargo-auditはバージョンを固定する。依存監査は最新の公開アドバイザリを取得し、警告も失敗として扱う。
 このCIはコード検証のみを行い、デプロイや公開URLの変更は行わない。
 
@@ -56,3 +56,16 @@ Rustテストは `php-reference/compat_vectors.bin` をコンパイル時に読�
 `.gitignore` は許可したソース・ビルド入力だけを追跡できる構成。運用スクリプト、設定草案、検証結果、画像、秘密鍵、DB、ダンプ、画面、targetは追跡しない。
 Gitの履歴はデータバックアップを代替しない。データ保全は運用側で別管理する。
 配備先のバイナリや稼働サービスは、コミットしただけでは更新されない。
+
+## ライセンス
+
+このリポジトリのRustのコードとビルド入力はMITライセンス（`LICENSE`）。
+
+ただし次のファイルはPHP libmbfl（"streamable kanji code filter and converter"、Copyright (c) 1998-2002 HappySize, Inc.）に由来し、
+GNU Lesser General Public License version 2.1（`php-reference/LICENSE`）の下で再配布する。MITの対象外。
+
+- `php-reference/` 配下の参照ソースと、そこから生成した `compat_vectors.bin`・`decoder_oracle.c`
+- `src/jis0208.bin`・`src/jis0212.bin`（`unicode_table_jis.h` の表をそのまま16ビットに詰めたもの）
+
+JIS表は `hengscore-server` の実行バイナリに組み込まれるため、バイナリを配布する場合はLGPLの条件も満たすこと（このリポジトリのソース公開で満たせる）。
+出典のコミットとSHA-256は `php-reference/NOTICE` と `php-reference/extraction_report.json` を参照。
