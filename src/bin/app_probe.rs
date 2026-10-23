@@ -1,6 +1,6 @@
 //! Unpublished end-to-end prototype: one disposable store, one loopback port.
 #![forbid(unsafe_code)]
-use hengscore_poc::{
+use hengscore::{
     registration::{Fault, Store},
     submission_http, web, web_http,
 };

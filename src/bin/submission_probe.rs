@@ -1,5 +1,5 @@
 #![forbid(unsafe_code)]
-use hengscore_poc::submission::{MAX_RAW, parse_submission};
+use hengscore::submission::{MAX_RAW, parse_submission};
 use std::{
     env,
     error::Error,
