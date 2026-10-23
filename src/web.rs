@@ -47,7 +47,7 @@ const STYLE: &str = "body{margin:0;background:#f5f6f8;color:#17222e;font:15px/1.
 
 pub(crate) fn shell(title: &str, body: &str) -> String {
     format!(
-        "<!doctype html><html lang=\"ja\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{} · Hengband Score</title><style>{STYLE}</style></head><body><header><h1>Hengband Score</h1><p>ローカル表示試験 · 読み取り専用</p></header><main><nav class=\"links\"><a href=\"/\">スコア一覧</a><a href=\"/custom_search.php\">詳細検索</a><a href=\"/popularity_ranking.php\">人気ランキング</a><a href=\"/killer_ranking.php\">死因ランキング</a><a href=\"/feed/newcome-atom.xml\">新着フィード</a></nav>{body}</main></body></html>",
+        "<!doctype html><html lang=\"ja\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{} · Hengband Score</title><style>{STYLE}</style></head><body><header><h1>Hengband Score</h1><p>冒険の記録・ランキング</p></header><main><nav class=\"links\"><a href=\"/\">スコア一覧</a><a href=\"/custom_search.php\">詳細検索</a><a href=\"/popularity_ranking.php\">人気ランキング</a><a href=\"/killer_ranking.php\">死因ランキング</a><a href=\"/feed/newcome-atom.xml\">新着フィード</a></nav>{body}</main></body></html>",
         escape(title)
     )
 }
