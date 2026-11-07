@@ -43,7 +43,7 @@ pub fn escape(text: &str) -> String {
     out
 }
 
-const STYLE: &str = "body{margin:0;background:#f5f6f8;color:#17222e;font:15px/1.65 system-ui,sans-serif}header{background:#172c3a;color:white;padding:24px max(24px,calc((100% - 1280px)/2))}header h1{margin:0;font-size:26px}header p{color:#c1d1db;margin:4px 0}main{max-width:1280px;margin:28px auto;padding:0 24px}a{color:#086b89;text-decoration:none}a:hover{text-decoration:underline}.tabs,.pages,.links{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:18px 0}.tabs a,.pages a,.links a{background:white;border:1px solid #d7e0e6;border-radius:6px;padding:8px 16px}.tabs .active{background:#086b89;color:white;border-color:#086b89}.muted{color:#586b79}.card{background:white;border:1px solid #dfe5e9;border-radius:8px;overflow:auto}table{border-collapse:collapse;width:100%;white-space:nowrap}th,td{padding:11px 14px;border-bottom:1px solid #e8edf0;text-align:left}th{background:#edf3f6;color:#425868;font-weight:600}tr:hover td{background:#f7fafb}.num{text-align:right;font-variant-numeric:tabular-nums}dl{display:grid;grid-template-columns:140px 1fr;margin:0;padding:16px 24px}dt,dd{padding:9px 0;margin:0;border-bottom:1px solid #edf0f2}dt{color:#586b79}dd{overflow-wrap:anywhere}pre{margin:0;padding:24px;font:14px/1.5 ui-monospace,monospace;white-space:pre;overflow:auto}.ranking thead tr:first-child th:not([rowspan]),.ranking tbody.score tr:first-child td:not(.rank){border-bottom:0}.ranking .rank{text-align:center;vertical-align:middle;font-variant-numeric:tabular-nums}.ranking tbody.score:nth-of-type(even) td{background:#eef4f7}.ranking tbody.score:hover td{background:#e1edf3}.files{display:inline-flex;margin:0 0 0 12px}.files a{padding:2px 8px}input,select,button{font:inherit;padding:6px;border:1px solid #b9c9d2;border-radius:4px}button{background:#086b89;color:white;cursor:pointer}label{font-size:14px}h2{margin:0;font-size:23px}@media(max-width:600px){main{padding:0 12px}header{padding:20px 16px}dl{grid-template-columns:100px 1fr;padding:12px}.card{border-radius:5px}}";
+const STYLE: &str = "body{margin:0;background:#f5f6f8;color:#17222e;font:15px/1.65 system-ui,sans-serif}header{background:#172c3a;color:white;padding:24px max(24px,calc((100% - 1280px)/2))}header h1{margin:0;font-size:26px}header p{color:#c1d1db;margin:4px 0}main{max-width:1280px;margin:28px auto;padding:0 24px}a{color:#086b89;text-decoration:none}a:hover{text-decoration:underline}.tabs,.pages,.links{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:18px 0}.tabs a,.pages a,.links a{background:white;border:1px solid #d7e0e6;border-radius:6px;padding:8px 16px}.tabs .active{background:#086b89;color:white;border-color:#086b89}.muted{color:#586b79}.card{background:white;border:1px solid #dfe5e9;border-radius:8px;overflow:auto}table{border-collapse:collapse;width:100%;white-space:nowrap}th,td{padding:11px 14px;border-bottom:1px solid #e8edf0;text-align:left}th{background:#edf3f6;color:#425868;font-weight:600}tr:hover td{background:#f7fafb}.num{text-align:right;font-variant-numeric:tabular-nums}dl{display:grid;grid-template-columns:140px 1fr;margin:0;padding:16px 24px}dt,dd{padding:9px 0;margin:0;border-bottom:1px solid #edf0f2}dt{color:#586b79}dd{overflow-wrap:anywhere}pre{margin:0;padding:24px;font:14px/1.5 ui-monospace,monospace;white-space:pre;overflow:auto}.ranking tbody.score tr:first-child td:not(.rank){border-bottom:0}.ranking .rank{text-align:center;vertical-align:middle;font-variant-numeric:tabular-nums}.ranking tbody.score:nth-of-type(even) td{background:#eef4f7}.ranking tbody.score:hover td{background:#e1edf3}.files{display:inline-flex;margin:0 0 0 12px}.files a{padding:2px 8px}input,select,button{font:inherit;padding:6px;border:1px solid #b9c9d2;border-radius:4px}button{background:#086b89;color:white;cursor:pointer}label{font-size:14px}h2{margin:0;font-size:23px}@media(max-width:600px){main{padding:0 12px}header{padding:20px 16px}dl{grid-template-columns:100px 1fr;padding:12px}.card{border-radius:5px}}";
 
 pub(crate) fn shell(title: &str, body: &str) -> String {
     format!(
@@ -150,7 +150,7 @@ fn list(root: &Path, conn: &Connection, query: Option<&str>) -> Result<String> {
         )
         .expect("string write");
     }
-    body.push_str("</nav><div class=\"card\"><table class=\"ranking\"><thead><tr><th rowspan=\"2\">順位</th><th>スコア</th><th>名前</th><th>Lv</th><th>種族</th><th>職業</th><th>性格</th><th>性別</th><th>バージョン</th><th>登録日時</th></tr><tr><th colspan=\"9\">死因</th></tr></thead>");
+    body.push_str("</nav><div class=\"card\"><table class=\"ranking\"><thead><tr><th>順位</th><th>スコア</th><th>名前</th><th>Lv</th><th>種族</th><th>職業</th><th>性格</th><th>性別</th><th>バージョン</th><th>登録日時</th></tr></thead>");
     for (index, (id, _)) in rows.iter().enumerate() {
         let s = score(conn, *id)?;
         let realms = web_features::realms(conn, s.id)?;
@@ -172,8 +172,11 @@ fn list(root: &Path, conn: &Connection, query: Option<&str>) -> Result<String> {
     Ok(shell("ランキング", &body))
 }
 
-// One score spans two rows in its own tbody, so the rank cell and the
-// alternating background mark which rows belong together.
+/// Renders one score of the ranking as two rows in its own tbody.
+///
+/// The rank cell spans both rows and the background alternates per tbody,
+/// so readers see which rows belong together. The second row carries the
+/// death and the file links without a header, as before.
 fn ranking_rows(rank: i64, s: &Score, realms: &str, files: &str) -> String {
     let class = if realms.is_empty() {
         escape(&s.class)
