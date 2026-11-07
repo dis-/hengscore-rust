@@ -100,7 +100,7 @@ fn db<T>(value: rusqlite::Result<T>) -> Result<T> {
 pub(crate) fn realms(conn: &Connection, id: i64) -> Result<String> {
     let mut stmt=db(conn.prepare("SELECT realm_name FROM score_realms JOIN realms USING(realm_id) WHERE score_id=? ORDER BY realm_seq"))?;
     let rows = db(stmt.query_map([id], |r| r.get::<_, String>(0)))?;
-    Ok(db(rows.collect::<rusqlite::Result<Vec<_>>>())?.join(" / "))
+    Ok(db(rows.collect::<rusqlite::Result<Vec<_>>>())?.join(","))
 }
 pub(crate) fn file_links(root: &Path, id: i64) -> String {
     let mut body = String::from("<nav class=\"links files\" aria-label=\"保存ファイル\">");

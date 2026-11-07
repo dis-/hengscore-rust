@@ -43,7 +43,7 @@ pub fn escape(text: &str) -> String {
     out
 }
 
-const STYLE: &str = "body{margin:0;background:#f5f6f8;color:#17222e;font:15px/1.65 system-ui,sans-serif}header{background:#172c3a;color:white;padding:24px max(24px,calc((100% - 1280px)/2))}header h1{margin:0;font-size:26px}header p{color:#c1d1db;margin:4px 0}main{max-width:1280px;margin:28px auto;padding:0 24px}a{color:#086b89;text-decoration:none}a:hover{text-decoration:underline}.tabs,.pages,.links{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:18px 0}.tabs a,.pages a,.links a{background:white;border:1px solid #d7e0e6;border-radius:6px;padding:8px 16px}.tabs .active{background:#086b89;color:white;border-color:#086b89}.muted{color:#586b79}.card{background:white;border:1px solid #dfe5e9;border-radius:8px;overflow:auto}table{border-collapse:collapse;width:100%;white-space:nowrap}th,td{padding:11px 14px;border-bottom:1px solid #e8edf0;text-align:left}th{background:#edf3f6;color:#425868;font-weight:600}tr:hover td{background:#f7fafb}.num{text-align:right;font-variant-numeric:tabular-nums}dl{display:grid;grid-template-columns:140px 1fr;margin:0;padding:16px 24px}dt,dd{padding:9px 0;margin:0;border-bottom:1px solid #edf0f2}dt{color:#586b79}dd{overflow-wrap:anywhere}pre{margin:0;padding:24px;font:14px/1.5 ui-monospace,monospace;white-space:pre;overflow:auto}.files{display:inline-flex;margin:0 0 0 12px}.files a{padding:2px 8px}input,select,button{font:inherit;padding:6px;border:1px solid #b9c9d2;border-radius:4px}button{background:#086b89;color:white;cursor:pointer}label{font-size:14px}h2{margin:0;font-size:23px}@media(max-width:600px){main{padding:0 12px}header{padding:20px 16px}dl{grid-template-columns:100px 1fr;padding:12px}.card{border-radius:5px}}";
+const STYLE: &str = "body{margin:0;background:#f5f6f8;color:#17222e;font:15px/1.65 system-ui,sans-serif}header{background:#172c3a;color:white;padding:24px max(24px,calc((100% - 1280px)/2))}header h1{margin:0;font-size:26px}header p{color:#c1d1db;margin:4px 0}main{max-width:1280px;margin:28px auto;padding:0 24px}a{color:#086b89;text-decoration:none}a:hover{text-decoration:underline}.tabs,.pages,.links{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:18px 0}.tabs a,.pages a,.links a{background:white;border:1px solid #d7e0e6;border-radius:6px;padding:8px 16px}.tabs .active{background:#086b89;color:white;border-color:#086b89}.muted{color:#586b79}.card{background:white;border:1px solid #dfe5e9;border-radius:8px;overflow:auto}table{border-collapse:collapse;width:100%;white-space:nowrap}th,td{padding:11px 14px;border-bottom:1px solid #e8edf0;text-align:left}th{background:#edf3f6;color:#425868;font-weight:600}tr:hover td{background:#f7fafb}.num{text-align:right;font-variant-numeric:tabular-nums}dl{display:grid;grid-template-columns:140px 1fr;margin:0;padding:16px 24px}dt,dd{padding:9px 0;margin:0;border-bottom:1px solid #edf0f2}dt{color:#586b79}dd{overflow-wrap:anywhere}pre{margin:0;padding:24px;font:14px/1.5 ui-monospace,monospace;white-space:pre;overflow:auto}.ranking thead tr:first-child th:not([rowspan]),.ranking tbody.score tr:first-child td:not(.rank){border-bottom:0}.ranking .rank{text-align:center;vertical-align:middle;font-variant-numeric:tabular-nums}.ranking tbody.score:nth-of-type(even) td{background:#eef4f7}.ranking tbody.score:hover td{background:#e1edf3}.files{display:inline-flex;margin:0 0 0 12px}.files a{padding:2px 8px}input,select,button{font:inherit;padding:6px;border:1px solid #b9c9d2;border-radius:4px}button{background:#086b89;color:white;cursor:pointer}label{font-size:14px}h2{margin:0;font-size:23px}@media(max-width:600px){main{padding:0 12px}header{padding:20px 16px}dl{grid-template-columns:100px 1fr;padding:12px}.card{border-radius:5px}}";
 
 pub(crate) fn shell(title: &str, body: &str) -> String {
     format!(
@@ -150,27 +150,50 @@ fn list(root: &Path, conn: &Connection, query: Option<&str>) -> Result<String> {
         )
         .expect("string write");
     }
-    body.push_str("</nav><div class=\"card\"><table><thead><tr><th>順位</th><th>スコア</th><th>名前</th><th>Lv</th><th>種族</th><th>職業</th><th>性格</th><th>性別</th><th>バージョン</th><th>登録日時</th></tr></thead><tbody>");
+    body.push_str("</nav><div class=\"card\"><table class=\"ranking\"><thead><tr><th rowspan=\"2\">順位</th><th>スコア</th><th>名前</th><th>Lv</th><th>種族</th><th>職業</th><th>性格</th><th>性別</th><th>バージョン</th><th>登録日時</th></tr><tr><th colspan=\"9\">死因</th></tr></thead>");
     for (index, (id, _)) in rows.iter().enumerate() {
         let s = score(conn, *id)?;
-        write!(body,"<tr data-score-id=\"{}\"><td class=\"num\">{}</td><td class=\"num\">{}</td><td><a href=\"/scores/{}\">{}</a></td><td class=\"num\">{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>",s.id,offset+index as i64+1,s.score,s.id,escape(&s.name),s.level,escape(&s.race),escape(&s.class),escape(&s.personality),sex_label(s.sex),escape(&s.version),escape(&s.date)).expect("string write");
         let realms = web_features::realms(conn, s.id)?;
-        write!(
-            body,
-            "<tr><td></td><td colspan=\"9\">{} · {} {} </td></tr>",
-            escape(&s.death),
-            escape(&realms),
-            web_features::file_links(root, s.id)
-        )
-        .expect("string write");
+        body.push_str(&ranking_rows(
+            offset + index as i64 + 1,
+            &s,
+            &realms,
+            &web_features::file_links(root, s.id),
+        ));
     }
     if rows.is_empty() {
-        body.push_str("<tr><td colspan=\"10\">該当するスコアはありません。</td></tr>");
+        body.push_str(
+            "<tbody><tr><td colspan=\"10\">該当するスコアはありません。</td></tr></tbody>",
+        );
     }
-    body.push_str("</tbody></table></div>");
+    body.push_str("</table></div>");
     body.push_str(&web_features::pagination(&input, offset, total, PAGE_SIZE));
     body.push_str(&web_features::search_form(conn, &input)?);
     Ok(shell("ランキング", &body))
+}
+
+// One score spans two rows in its own tbody, so the rank cell and the
+// alternating background mark which rows belong together.
+fn ranking_rows(rank: i64, s: &Score, realms: &str, files: &str) -> String {
+    let class = if realms.is_empty() {
+        escape(&s.class)
+    } else {
+        format!("{} ({})", escape(&s.class), escape(realms))
+    };
+    format!(
+        "<tbody class=\"score\"><tr data-score-id=\"{}\"><td class=\"rank\" rowspan=\"2\">{rank}</td><td class=\"num\">{}</td><td><a href=\"/scores/{}\">{}</a></td><td class=\"num\">{}</td><td>{}</td><td>{class}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr><tr><td colspan=\"9\">{} {files}</td></tr></tbody>",
+        s.id,
+        s.score,
+        s.id,
+        escape(&s.name),
+        s.level,
+        escape(&s.race),
+        escape(&s.personality),
+        sex_label(s.sex),
+        escape(&s.version),
+        escape(&s.date),
+        escape(&s.death),
+    )
 }
 
 fn detail(root: &Path, conn: &Connection, id: i64) -> Result<String> {
@@ -405,6 +428,39 @@ mod tests {
             assert!(!safe.contains(forbidden), "{forbidden}: {safe}");
         }
         assert!(screen_frame(raw).contains("sandbox=\"\""));
+    }
+    fn sample_score() -> Score {
+        Score {
+            id: 7,
+            score: 1234,
+            name: "<勇者>".into(),
+            race: "人間".into(),
+            class: "メイジ".into(),
+            personality: "ふつう".into(),
+            level: 30,
+            date: "2026-11-08 12:00:00".into(),
+            version: "変愚蛮怒 3.0".into(),
+            depth: 20,
+            sex: 1,
+            death: "オークに殺された".into(),
+        }
+    }
+    #[test]
+    fn ranking_rows_group_one_score() {
+        let rows = ranking_rows(3, &sample_score(), "生命,自然", "<nav></nav>");
+        assert!(rows.starts_with("<tbody class=\"score\"><tr data-score-id=\"7\"><td class=\"rank\" rowspan=\"2\">3</td><td class=\"num\">1234</td>"));
+        assert!(rows.contains("<td>メイジ (生命,自然)</td>"));
+        assert!(
+            rows.contains("<tr><td colspan=\"9\">オークに殺された <nav></nav></td></tr></tbody>")
+        );
+        assert!(rows.contains("&lt;勇者&gt;"));
+        assert_eq!(rows.matches("<tr").count(), 2);
+    }
+    #[test]
+    fn ranking_rows_without_realm_show_class_only() {
+        let rows = ranking_rows(1, &sample_score(), "", "");
+        assert!(rows.contains("<td>メイジ</td>"));
+        assert!(!rows.contains("()"));
     }
     #[test]
     fn sex_matches_game_enum() {
