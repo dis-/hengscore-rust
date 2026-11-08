@@ -82,7 +82,7 @@ fn decode(value: &str) -> Result<String> {
     }
     Ok(text)
 }
-fn encode(text: &str) -> String {
+pub(crate) fn encode(text: &str) -> String {
     let mut out = String::new();
     for b in text.bytes() {
         if b.is_ascii_alphanumeric() || b"-_.~".contains(&b) {

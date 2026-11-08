@@ -43,11 +43,131 @@ pub fn escape(text: &str) -> String {
     out
 }
 
-const STYLE: &str = "body{margin:0;background:#f5f6f8;color:#17222e;font:15px/1.65 system-ui,sans-serif}header{background:#172c3a;color:white;padding:24px max(24px,calc((100% - 1280px)/2))}header h1{margin:0;font-size:26px}header p{color:#c1d1db;margin:4px 0}main{max-width:1280px;margin:28px auto;padding:0 24px}a{color:#086b89;text-decoration:none}a:hover{text-decoration:underline}.tabs,.pages,.links{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:18px 0}.tabs a,.pages a,.links a{background:white;border:1px solid #d7e0e6;border-radius:6px;padding:8px 16px}.tabs .active{background:#086b89;color:white;border-color:#086b89}.muted{color:#586b79}.card{background:white;border:1px solid #dfe5e9;border-radius:8px;overflow:auto}table{border-collapse:collapse;width:100%;white-space:nowrap}th,td{padding:11px 14px;border-bottom:1px solid #e8edf0;text-align:left}th{background:#edf3f6;color:#425868;font-weight:600}tr:hover td{background:#f7fafb}.num{text-align:right;font-variant-numeric:tabular-nums}dl{display:grid;grid-template-columns:140px 1fr;margin:0;padding:16px 24px}dt,dd{padding:9px 0;margin:0;border-bottom:1px solid #edf0f2}dt{color:#586b79}dd{overflow-wrap:anywhere}pre{margin:0;padding:24px;font:14px/1.5 ui-monospace,monospace;white-space:pre;overflow:auto}.ranking tbody.score tr:first-child td:not(.rank){border-bottom:0}.ranking .rank{text-align:center;vertical-align:middle;font-variant-numeric:tabular-nums}.ranking tbody.score:nth-of-type(even) td{background:#eef4f7}.ranking tbody.score:hover td{background:#e1edf3}.files{display:inline-flex;margin:0 0 0 12px}.files a{padding:2px 8px}input,select,button{font:inherit;padding:6px;border:1px solid #b9c9d2;border-radius:4px}button{background:#086b89;color:white;cursor:pointer}label{font-size:14px}h2{margin:0;font-size:23px}@media(max-width:600px){main{padding:0 12px}header{padding:20px 16px}dl{grid-template-columns:100px 1fr;padding:12px}.card{border-radius:5px}}";
+// Colors are variables so the dark palette can replace them in one place.
+macro_rules! dark_palette {
+    () => {
+        "color-scheme:dark;--bg:#11171c;--text:#dbe3e9;--head:#0a1217;--head-sub:#9db0bd;--link:#6cc6e3;--accent:#2b8fb0;--surface:#182128;--chip-border:#2c3a45;--card-border:#26323b;--muted:#98abb8;--line:#25313a;--th-bg:#1f2b34;--th-text:#b8c8d3;--hover:#1c2730;--stripe:#1b252d;--stripe-hover:#253540;--input-border:#3d4e5a;--input-bg:#10171c"
+    };
+}
+const STYLE: &str = concat!(
+    ":root{color-scheme:light;--bg:#f5f6f8;--text:#17222e;--head:#172c3a;--head-sub:#c1d1db;--link:#086b89;--accent:#086b89;--surface:white;--chip-border:#d7e0e6;--card-border:#dfe5e9;--muted:#586b79;--line:#e8edf0;--th-bg:#edf3f6;--th-text:#425868;--hover:#f7fafb;--stripe:#eef4f7;--stripe-hover:#e1edf3;--input-border:#b9c9d2;--input-bg:white}",
+    "@media(prefers-color-scheme:dark){:root:not([data-theme=light]){",
+    dark_palette!(),
+    "}}:root[data-theme=dark]{",
+    dark_palette!(),
+    "}",
+    "body{margin:0;background:var(--bg);color:var(--text);font:15px/1.65 system-ui,sans-serif}header{background:var(--head);color:white;padding:24px max(24px,calc((100% - 1280px)/2))}header h1{margin:0;font-size:26px}header p{color:var(--head-sub);margin:4px 0}.theme{color:var(--head-sub);font-size:13px}.theme a{color:inherit;margin-left:10px}.theme a[aria-current]{color:white;font-weight:600;text-decoration:underline}main{max-width:1280px;margin:28px auto;padding:0 24px}a{color:var(--link);text-decoration:none}a:hover{text-decoration:underline}.tabs,.pages,.links{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:18px 0}.tabs a,.pages a,.links a{background:var(--surface);border:1px solid var(--chip-border);border-radius:6px;padding:8px 16px}.tabs .active{background:var(--accent);color:white;border-color:var(--accent)}.muted{color:var(--muted)}.card{background:var(--surface);border:1px solid var(--card-border);border-radius:8px;overflow:auto}table{border-collapse:collapse;width:100%;white-space:nowrap}th,td{padding:11px 14px;border-bottom:1px solid var(--line);text-align:left}th{background:var(--th-bg);color:var(--th-text);font-weight:600}tr:hover td{background:var(--hover)}.num{text-align:right;font-variant-numeric:tabular-nums}dl{display:grid;grid-template-columns:140px 1fr;margin:0;padding:16px 24px}dt,dd{padding:9px 0;margin:0;border-bottom:1px solid var(--line)}dt{color:var(--muted)}dd{overflow-wrap:anywhere}pre{margin:0;padding:24px;font:14px/1.5 ui-monospace,monospace;white-space:pre;overflow:auto}.ranking tbody.score tr:first-child td:not(.rank){border-bottom:0}.ranking .rank{text-align:center;vertical-align:middle;font-variant-numeric:tabular-nums}.ranking tbody.score:nth-of-type(even) td{background:var(--stripe)}.ranking tbody.score:hover td{background:var(--stripe-hover)}.files{display:inline-flex;margin:0 0 0 12px}.files a{padding:2px 8px}input,select,button{font:inherit;padding:6px;border:1px solid var(--input-border);border-radius:4px}input,select{background:var(--input-bg);color:var(--text)}button{background:var(--accent);color:white;cursor:pointer}label{font-size:14px}h2{margin:0;font-size:23px}@media(max-width:600px){main{padding:0 12px}header{padding:20px 16px}dl{grid-template-columns:100px 1fr;padding:12px}.card{border-radius:5px}}"
+);
+
+const SHELL_START: &str = "<!doctype html><html lang=\"ja\">";
+const THEME_SLOT: &str = "<!--theme-->";
+const THEME_COOKIE: &str = "hengscore_theme";
+
+/// Color theme chosen with the header links. `Auto` follows the OS setting.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Theme {
+    Auto,
+    Light,
+    Dark,
+}
+
+impl Theme {
+    fn parse(mode: &str) -> Option<Self> {
+        match mode {
+            "auto" => Some(Self::Auto),
+            "light" => Some(Self::Light),
+            "dark" => Some(Self::Dark),
+            _ => None,
+        }
+    }
+
+    fn name(self) -> &'static str {
+        match self {
+            Self::Auto => "auto",
+            Self::Light => "light",
+            Self::Dark => "dark",
+        }
+    }
+
+    /// Reads the theme from a Cookie header; anything unknown means `Auto`.
+    pub fn from_cookie(header: Option<&str>) -> Self {
+        header
+            .into_iter()
+            .flat_map(|h| h.split(';'))
+            .filter_map(|pair| pair.trim().strip_prefix(THEME_COOKIE)?.strip_prefix('='))
+            .find_map(Self::parse)
+            .unwrap_or(Self::Auto)
+    }
+
+    /// Returns the Set-Cookie value that stores this theme; `Auto` removes the cookie.
+    pub fn set_cookie(self) -> String {
+        match self {
+            Self::Auto => {
+                format!("{THEME_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax; Secure; HttpOnly")
+            }
+            theme => format!(
+                "{THEME_COOKIE}={}; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly",
+                theme.name()
+            ),
+        }
+    }
+}
+
+/// Parses `/theme?mode=..&back=..` into the chosen theme and the page to return to.
+///
+/// The return target must be a path on this site. Anything else falls back to
+/// the top page, so the link cannot redirect to another host.
+pub fn theme_switch(query: Option<&str>) -> Result<(Theme, String)> {
+    let input = Query::parse(query)?;
+    input.allow(&["mode", "back"])?;
+    let theme = Theme::parse(input.get("mode", "")).ok_or(PageError::BadRequest)?;
+    let back = input.get("back", "/");
+    let local = back.starts_with('/')
+        && !back.starts_with("//")
+        && back.bytes().all(|b| b.is_ascii_graphic() && b != b'\\');
+    Ok((theme, if local { back.into() } else { "/".into() }))
+}
+
+/// Marks the page with the chosen theme and fills in the header links that switch it.
+///
+/// Only pages built by `shell` are changed; other responses pass through as they are.
+pub fn apply_theme(html: String, theme: Theme, here: &str) -> String {
+    let Some(rest) = html.strip_prefix(SHELL_START) else {
+        return html;
+    };
+    let mut links = String::from("<nav class=\"theme\" aria-label=\"表示の色\">表示:");
+    for (choice, label) in [
+        (Theme::Auto, "自動"),
+        (Theme::Light, "ライト"),
+        (Theme::Dark, "ダーク"),
+    ] {
+        write!(
+            links,
+            "<a href=\"/theme?mode={}&amp;back={}\"{}>{label}</a>",
+            choice.name(),
+            web_features::encode(here),
+            if choice == theme {
+                " aria-current=\"true\""
+            } else {
+                ""
+            }
+        )
+        .expect("string write");
+    }
+    links.push_str("</nav>");
+    let attribute = match theme {
+        Theme::Auto => String::new(),
+        theme => format!(" data-theme=\"{}\"", theme.name()),
+    };
+    format!(
+        "<!doctype html><html lang=\"ja\"{attribute}>{}",
+        rest.replacen(THEME_SLOT, &links, 1)
+    )
+}
 
 pub(crate) fn shell(title: &str, body: &str) -> String {
     format!(
-        "<!doctype html><html lang=\"ja\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{} · Hengband Score</title><style>{STYLE}</style></head><body><header><h1>Hengband Score</h1><p>冒険の記録・ランキング</p></header><main><nav class=\"links\"><a href=\"/\">スコア一覧</a><a href=\"/custom_search.php\">詳細検索</a><a href=\"/popularity_ranking.php\">人気ランキング</a><a href=\"/killer_ranking.php\">死因ランキング</a><a href=\"/feed/newcome-atom.xml\">新着フィード</a></nav>{body}</main></body></html>",
+        "<!doctype html><html lang=\"ja\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{} · Hengband Score</title><style>{STYLE}</style></head><body><header><h1>Hengband Score</h1><p>冒険の記録・ランキング</p><!--theme--></header><main><nav class=\"links\"><a href=\"/\">スコア一覧</a><a href=\"/custom_search.php\">詳細検索</a><a href=\"/popularity_ranking.php\">人気ランキング</a><a href=\"/killer_ranking.php\">死因ランキング</a><a href=\"/feed/newcome-atom.xml\">新着フィード</a></nav>{body}</main></body></html>",
         escape(title)
     )
 }
@@ -464,6 +584,81 @@ mod tests {
         let rows = ranking_rows(1, &sample_score(), "", "");
         assert!(rows.contains("<td>メイジ</td>"));
         assert!(!rows.contains("()"));
+    }
+    #[test]
+    fn theme_cookie_falls_back_to_auto() {
+        assert_eq!(
+            Theme::from_cookie(Some("a=1; hengscore_theme=dark")),
+            Theme::Dark
+        );
+        assert_eq!(
+            Theme::from_cookie(Some("hengscore_theme=light")),
+            Theme::Light
+        );
+        for header in [
+            None,
+            Some(""),
+            Some("hengscore_theme=blue"),
+            Some("hengscore_themex=dark"),
+        ] {
+            assert_eq!(Theme::from_cookie(header), Theme::Auto);
+        }
+        assert!(
+            Theme::Dark
+                .set_cookie()
+                .starts_with("hengscore_theme=dark; Path=/; Max-Age=31536000;")
+        );
+        assert!(
+            Theme::Auto
+                .set_cookie()
+                .starts_with("hengscore_theme=; Path=/; Max-Age=0;")
+        );
+    }
+    #[test]
+    fn theme_switch_returns_only_to_local_paths() {
+        let back = |query: &str| theme_switch(Some(query)).ok().map(|(_, back)| back);
+        assert_eq!(
+            back("mode=dark&back=%2F%3Fsort%3Dnewcome"),
+            Some("/?sort=newcome".into())
+        );
+        assert_eq!(back("mode=light"), Some("/".into()));
+        for target in [
+            "%2F%2Fevil.example",
+            "https%3A%2F%2Fevil.example",
+            "%2F%5Cevil.example",
+            "%2Fa%20b",
+            "%2F%E3%81%82",
+        ] {
+            assert_eq!(
+                back(&format!("mode=auto&back={target}")),
+                Some("/".into()),
+                "{target}"
+            );
+        }
+        assert!(matches!(
+            theme_switch(Some("mode=dark")),
+            Ok((Theme::Dark, _))
+        ));
+        for query in ["mode=blue", "back=%2F", "mode=dark&extra=1"] {
+            assert!(theme_switch(Some(query)).is_err(), "{query}");
+        }
+    }
+    #[test]
+    fn theme_marks_shell_pages_only() {
+        let page = shell("t", "<p>body</p>");
+        assert!(page.starts_with(SHELL_START) && page.contains(THEME_SLOT));
+        let dark = apply_theme(page.clone(), Theme::Dark, "/?sort=newcome");
+        assert!(dark.starts_with("<!doctype html><html lang=\"ja\" data-theme=\"dark\"><head>"));
+        assert!(dark.contains("<a href=\"/theme?mode=dark&amp;back=%2F%3Fsort%3Dnewcome\" aria-current=\"true\">ダーク</a>"));
+        assert!(
+            dark.contains("<a href=\"/theme?mode=auto&amp;back=%2F%3Fsort%3Dnewcome\">自動</a>")
+        );
+        assert!(!dark.contains(THEME_SLOT));
+        let auto = apply_theme(page, Theme::Auto, "/");
+        assert!(auto.starts_with("<!doctype html><html lang=\"ja\"><head>"));
+        assert!(auto.contains("aria-current=\"true\">自動</a>"));
+        let feed = "<?xml version=\"1.0\"?><feed/>".to_owned();
+        assert_eq!(apply_theme(feed.clone(), Theme::Dark, "/"), feed);
     }
     #[test]
     fn sex_matches_game_enum() {
