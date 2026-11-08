@@ -1,5 +1,5 @@
 #![forbid(unsafe_code)]
-use crate::web::{self, PageError};
+use crate::web::{self, PageError, Theme};
 use axum::{
     Router,
     body::Body,
@@ -48,6 +48,29 @@ async fn page(State(app): State<App>, request: Request<Body>) -> Response {
             web::error_page(&PageError::BadRequest),
         );
     }
+    if request.uri().path() == "/theme" {
+        return match web::theme_switch(request.uri().query()) {
+            Ok((theme, back)) => {
+                let mut r = response(StatusCode::SEE_OTHER, String::new());
+                for (k, v) in [("location", back), ("set-cookie", theme.set_cookie())] {
+                    r.headers_mut()
+                        .insert(k, v.parse().expect("validated header"));
+                }
+                r
+            }
+            Err(e) => response(StatusCode::BAD_REQUEST, web::error_page(&e)),
+        };
+    }
+    let theme = Theme::from_cookie(
+        request
+            .headers()
+            .get("cookie")
+            .and_then(|v| v.to_str().ok()),
+    );
+    let here = request
+        .uri()
+        .path_and_query()
+        .map_or_else(|| "/".to_owned(), |p| p.as_str().to_owned());
     let permit = match app.permit.clone().try_acquire_owned() {
         Ok(p) => p,
         Err(_) => {
@@ -66,7 +89,7 @@ async fn page(State(app): State<App>, request: Request<Body>) -> Response {
     });
     match task.await {
         Ok(Ok(html)) => {
-            let mut r = response(StatusCode::OK, html);
+            let mut r = response(StatusCode::OK, web::apply_theme(html, theme, &here));
             if is_feed {
                 r.headers_mut().insert(
                     "content-type",
@@ -88,7 +111,7 @@ async fn page(State(app): State<App>, request: Request<Body>) -> Response {
                 PageError::TooLarge => StatusCode::PAYLOAD_TOO_LARGE,
                 PageError::Unavailable => StatusCode::SERVICE_UNAVAILABLE,
             };
-            response(status, web::error_page(&e))
+            response(status, web::apply_theme(web::error_page(&e), theme, &here))
         }
     }
 }
